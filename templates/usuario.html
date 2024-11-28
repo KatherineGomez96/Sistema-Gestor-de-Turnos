@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <title>Gestión de Clientes</title>
+    </head>
+    <body>
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="index.html">Gestor de Turnos</a>
+            <!-- Botón que aparece en pantallas pequeñas -->
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Contenido del menú colapsable -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Sistema Gestor de Turnos/templates/index.html">Turnos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Sistema Gestor de Turnos/templates/usuario.html">Clientes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Sistema Gestor de Turnos/templates/empleado.html">Empleados</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        
+
+
+        <div class="container mt-5">
+            <h1>Agregar Cliente</h1>
+            <form id="usuarioForm">
+                <div class="form-group">
+                    <label for="dniUsuario">DNI</label>
+                    <input type="text" class="form-control" id="dniUsuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="nombreUsuario">Nombre</label>
+                    <input type="text" class="form-control" id="nombreUsuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="apellidoUsuario">Apellido</label>
+                    <input type="text" class="form-control" id="apellidoUsuario" required>
+                </div>
+                <div class="form-group">
+                    <label for="telefonoUsuario">Teléfono del Cliente</label>
+                    <input type="text" class="form-control" id="telefonoUsuario">
+                </div>
+                <button type="submit" class="btn btn-primary">Agregar Cliente</button>
+            </form>
+
+            <h2 class="mt-5">Lista de Clientes</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>DNI</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Teléfono</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usuarioTable">
+                    <!-- Aquí se insertarán los usuarios -->
+                </tbody>
+            </table>
+        </div>
+
+        <script>
+            // Agregar Cliente
+            document.getElementById('usuarioForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const dniUsuario = document.getElementById('dniUsuario').value;
+                const nombreUsuario = document.getElementById('nombreUsuario').value;
+                const apellidoUsuario = document.getElementById('apellidoUsuario').value;
+                const telefonoUsuario = document.getElementById('telefonoUsuario').value;
+
+                fetch('/agregar_usuario', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        dni: dniUsuario,
+                        nombre: nombreUsuario,
+                        apellido: apellidoUsuario,
+                        telefono: telefonoUsuario
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    document.getElementById('usuarioForm').reset();
+                    cargarUsuarios(); // Cargar usuarios después de agregar uno nuevo
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            // Cargar Clientes
+            function cargarUsuarios() {
+                fetch('/ver_usuarios')
+                    .then(response => response.json())
+                    .then(usuarios => {
+                        const usuarioTable = document.getElementById('usuarioTable');
+                        usuarioTable.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos usuarios
+                        usuarios.forEach(usuario => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${usuario.id}</td>
+                                <td>${usuario.dni}</td>
+                                <td>${usuario.nombre}</td>
+                                <td>${usuario.apellido}</td>
+                                <td>${usuario.telefono}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" onclick="editarUsuario(${usuario.id})">Editar</button>
+                                    <button class="btn btn-danger btn-sm" onclick="eliminarUsuario(${usuario.id})">Eliminar</button>
+                                </td>
+                            `;
+                            usuarioTable.appendChild(row);
+                        });
+                    })
+                    .catch(error => console.error('Error al cargar usuarios:', error));
+            }
+
+            // Función para editar cliente
+            function editarUsuario(id) {
+                const nuevoDni = prompt("Ingresa el nuevo DNI:");
+                const nuevoNombre = prompt("Ingresa el nuevo nombre:");
+                const nuevoApellido = prompt("Ingresa el nuevo apellido:");
+                const nuevoTelefono = prompt("Ingresa el nuevo teléfono:");
+
+                if (nuevoDni && nuevoNombre && nuevoApellido && nuevoTelefono) {
+                    fetch(`/editar_usuario/${id}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            dni: nuevoDni,
+                            nombre: nuevoNombre,
+                            apellido: nuevoApellido,
+                            telefono: nuevoTelefono
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        cargarUsuarios(); // Recargar la lista después de editar
+                    })
+                    .catch(error => console.error('Error al editar usuario:', error));
+                }
+            }
+
+            // Función para eliminar cliente
+            function eliminarUsuario(id) {
+                if (confirm("¿Estás seguro de que deseas eliminar este usuario?")) {
+                    fetch(`/eliminar_usuario/${id}`, {
+                        method: 'DELETE'
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        cargarUsuarios(); // Recargar la lista después de eliminar
+                    })
+                    .catch(error => console.error('Error al eliminar usuario:', error));
+                }
+            }
+
+            // Cargar usuarios al cargar la página
+            window.onload = function() {
+                cargarUsuarios();
+            };
+        </script>
+
+        <!-- Scripts necesarios para que Bootstrap funcione correctamente -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    </body>
+</html>
+

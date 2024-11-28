@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <title>Sistema Gestor de Turnos</title>
+    </head>
+    <body>
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand" href="index.html">Gestor de Turnos</a>
+            <!-- Botón que aparece en pantallas pequeñas -->
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- Contenido del menú colapsable -->
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Sistema Gestor de Turnos/templates/index.html">Turnos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Sistema Gestor de Turnos/templates/usuario.html">Clientes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/Sistema Gestor de Turnos/templates/empleado.html">Empleados</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+
+        <!-- Contenido de la página -->
+        <div class="container mt-5">
+            <h1>Sistema Gestor de Turnos</h1>
+
+            <!-- Formulario para agregar turno -->
+            <h2>Agregar Turno</h2>
+            <form id="turnoForm">
+                <div class="form-group">
+                    <label for="usuarioID">Cliente</label>
+                    <select class="form-control" id="usuarioID" required>
+                        <!-- Las opciones serán llenadas dinámicamente con el ID, nombre y apellido del usuario -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="fecha">Fecha</label>
+                    <input type="date" class="form-control" id="fecha" required>
+                </div>
+                <div class="form-group">
+                    <label for="horaInicio">Hora de Inicio</label>
+                    <input type="time" class="form-control" id="horaInicio" required>
+                </div>
+                <div class="form-group">
+                    <label for="horaFin">Hora de Fin</label>
+                    <input type="time" class="form-control" id="horaFin" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Agregar Turno</button>
+            </form>
+
+            <h2 class="mt-5">Lista de Turnos</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Hora Inicio</th>
+                        <th>Hora Fin</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="turnoTable">
+                    <!-- Aquí se insertarán los turnos -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Scripts necesarios para que Bootstrap funcione correctamente -->
+        <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+        <script>
+            // Función para cargar usuarios en el select
+            function cargarUsuarios() {
+                fetch('/ver_usuarios')
+                    .then(response => response.json())
+                    .then(usuarios => {
+                        const usuarioSelect = document.getElementById('usuarioID');
+                        usuarioSelect.innerHTML = '';  // Limpiar las opciones previas
+                        usuarios.forEach(usuario => {
+                            const option = document.createElement('option');
+                            option.value = usuario.id;  // Valor será el ID del usuario
+                            option.textContent = `${usuario.id} - ${usuario.nombre} ${usuario.apellido}`;  // Texto de la opción
+                            usuarioSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error al cargar usuarios:', error));
+            }
+
+            document.getElementById('turnoForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const usuarioID = document.getElementById('usuarioID').value;
+                const fecha = document.getElementById('fecha').value;
+                const horaInicio = document.getElementById('horaInicio').value;
+                const horaFin = document.getElementById('horaFin').value;
+
+                fetch('/agregar_turno', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario_id: usuarioID,
+                        fecha: fecha,
+                        hora_inicio: horaInicio,
+                        hora_fin: horaFin
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    document.getElementById('turnoForm').reset();
+                    cargarTurnos(); // Cargar turnos después de agregar un turno
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+            // Función para cargar turnos
+            function cargarTurnos() {
+                fetch('/ver_turnos')
+                    .then(response => response.json())
+                    .then(turnos => {
+                        const turnoTable = document.getElementById('turnoTable');
+                        turnoTable.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos turnos
+                        turnos.forEach(turno => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${turno.id}</td>
+                                <td>${turno.nombre}</td>
+                                <td>${turno.fecha}</td>
+                                <td>${turno.hora_inicio}</td>
+                                <td>${turno.hora_fin}</td>
+                                <td>
+                                    <button class="btn btn-warning btn-sm" onclick="editarTurno(${turno.id})">Editar</button>
+                                    <button class="btn btn-danger btn-sm" onclick="eliminarTurno(${turno.id})">Eliminar</button>
+                                </td>
+                            `;
+                            turnoTable.appendChild(row);
+                        });
+                    })
+                    .catch(error => console.error('Error al cargar turnos:', error));
+            }
+
+            // Función para editar turno
+            function editarTurno(turnoID) {
+                const usuarioID = prompt("Ingrese el nuevo ID de usuario:");
+                const fecha = prompt("Ingrese la nueva fecha (YYYY-MM-DD):");
+                const horaInicio = prompt("Ingrese la nueva hora de inicio (HH:MM):");
+                const horaFin = prompt("Ingrese la nueva hora de fin (HH:MM):");
+
+                fetch(`/actualizar_turno/${turnoID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        usuario_id: usuarioID,
+                        fecha: fecha,
+                        hora_inicio: horaInicio,
+                        hora_fin: horaFin
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    cargarTurnos(); // Recargar turnos después de la actualización
+                })
+                .catch(error => console.error('Error al actualizar turno:', error));
+            }
+
+            // Función para eliminar turno
+            function eliminarTurno(turnoID) {
+                if (confirm("¿Estás seguro de que deseas eliminar este turno?")) {
+                    fetch(`/eliminar_turno/${turnoID}`, {
+                        method: 'DELETE',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        alert(data.message);
+                        cargarTurnos(); // Recargar turnos después de eliminar
+                    })
+                    .catch(error => console.error('Error al eliminar turno:', error));
+                }
+            }
+
+            // Cargar usuarios y turnos al cargar la página
+            window.onload = function() {
+                cargarUsuarios(); // Cargar usuarios para el select
+                cargarTurnos(); // Cargar turnos al cargar la página
+            };
+        </script>
+    </body>
+</html>
+
+
