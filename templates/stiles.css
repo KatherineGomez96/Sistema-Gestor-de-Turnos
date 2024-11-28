@@ -6,3 +6,7 @@ body {
     height: 100vh;
     margin: 0; 
 }
+h1, h2, h3, p {
+    color: white; 
+    text-shadow: 0 0 5px #FFB6A3, 0 0 10px #FFB6A3, 0 0 15px #FFB6A3, 0 0 20px #FFB6A3, 0 0 25px #FFB6A3, 0 0 30px #FFB6A3, 0 0 35px #FFB6A3; 
+}
